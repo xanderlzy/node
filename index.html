@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>kanban</title>
+<meta name="description" content="a minimal kanban board">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f5f7">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#000000">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="kanban">
+<style>
+:root{--bg:#f5f5f7;--panel:rgba(0,0,0,.04);--card:#fff;--fg:#1d1d1f;--mute:#86868b;--line:rgba(0,0,0,.08);--shadow:0 1px 2px rgba(0,0,0,.06),0 6px 20px rgba(0,0,0,.05);--lift:0 2px 4px rgba(0,0,0,.08),0 18px 40px rgba(0,0,0,.14);color-scheme:light;
+--spring:cubic-bezier(.34,1.56,.64,1);--ease:cubic-bezier(.2,.8,.2,1);
+box-sizing:border-box;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--panel:rgba(255,255,255,.06);--card:#1c1c1e;--fg:#f5f5f7;--mute:#8e8e93;--line:rgba(255,255,255,.1);--shadow:0 1px 2px rgba(0,0,0,.5);--lift:0 18px 40px rgba(0,0,0,.7);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#000;--panel:rgba(255,255,255,.06);--card:#1c1c1e;--fg:#f5f5f7;--mute:#8e8e93;--line:rgba(255,255,255,.1);--shadow:0 1px 2px rgba(0,0,0,.5);--lift:0 18px 40px rgba(0,0,0,.7);color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;background:var(--bg)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;text-transform:lowercase;-webkit-font-smoothing:antialiased;min-height:100vh;min-height:100dvh;overscroll-behavior:none}
+body.dragging{user-select:none;-webkit-user-select:none;cursor:grabbing}
+.wrap{max-width:1120px;margin:0 auto;padding:24px 20px 48px}
+nav{display:flex;gap:6px;padding:4px;background:var(--panel);border-radius:999px;width:max-content;max-width:100%;overflow-x:auto;scrollbar-width:none;margin-bottom:36px}
+nav::-webkit-scrollbar{display:none}
+nav span{padding:8px 16px;border-radius:999px;color:var(--mute);font-size:13px;font-weight:500;white-space:nowrap;transition:.4s var(--ease)}
+nav .on{background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
+nav small{opacity:.6;margin-left:4px;font-size:11px}
+h1{font-size:clamp(40px,10vw,72px);line-height:1;letter-spacing:-.045em;font-weight:700;margin:0 0 10px}
+.sub{color:var(--mute);margin:0 0 20px;font-size:17px;letter-spacing:-.01em}
+.bar{height:4px;border-radius:4px;background:var(--panel);overflow:hidden;margin-bottom:28px}
+.bar i{display:block;height:100%;width:0;background:var(--fg);border-radius:4px;transition:width .9s var(--spring)}
+
+/* board: always side by side, scrolls sideways when it must */
+.board{display:flex;gap:14px;align-items:flex-start;overflow-x:auto;margin:0 -20px;padding:6px 20px 28px;scroll-snap-type:x proximity;scroll-padding:0 20px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.board::-webkit-scrollbar{display:none}
+.col{flex:0 0 min(80vw,340px);scroll-snap-align:center;background:var(--panel);border-radius:26px;padding:14px;min-height:280px;transition:background .3s,transform .5s var(--spring)}
+@media(min-width:900px){.col{flex:1 1 0;min-width:0}}
+.col.over{background:var(--line);transform:scale(1.012)}
+.head{display:flex;align-items:center;gap:10px;padding:6px 8px 14px;font-weight:600;font-size:17px;letter-spacing:-.02em}
+.glyph{font-size:18px;display:inline-block;transition:transform .6s var(--spring)}
+.col.over .glyph{transform:rotate(180deg) scale(1.2)}
+.count{margin-left:auto;min-width:26px;height:26px;border-radius:13px;background:var(--card);display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--mute);box-shadow:var(--shadow)}
+.list{display:flex;flex-direction:column;gap:10px;min-height:20px}
+.card{background:var(--card);border-radius:18px;padding:14px 14px 12px;box-shadow:var(--shadow);cursor:grab;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:transform .45s var(--spring),box-shadow .3s,opacity .3s;position:relative}
+@media(hover:hover){.card:hover{transform:translateY(-2px) rotate(-.4deg);box-shadow:var(--lift)}}
+.card.dragging{opacity:.3;transform:scale(.96)}
+.card.pop{animation:pop .7s var(--spring)}
+.card.out{transform:scale(.8);opacity:0}
+.ghost{position:fixed;left:0;top:0;z-index:100;pointer-events:none;margin:0;box-shadow:var(--lift);transition:none;opacity:1!important}
+.ghost .row{opacity:0!important}
+@keyframes pop{0%{transform:scale(.7) translateY(12px);opacity:0}100%{transform:none;opacity:1}}
+.t{outline:none;word-break:break-word;letter-spacing:-.01em;transition:color .4s;font-size:16px}
+.t[contenteditable="true"]{user-select:text;-webkit-user-select:text;cursor:text}
+.done .t{color:var(--mute);text-decoration:line-through;text-decoration-thickness:1.5px}
+.row{display:flex;align-items:center;gap:6px;margin-top:8px;min-height:28px;opacity:0;transition:opacity .25s}
+.card:hover .row,.card:focus-within .row{opacity:1}
+@media(hover:none){.row{opacity:1}}
+.row button{border:0;background:var(--panel);color:var(--mute);width:34px;height:28px;border-radius:14px;font:inherit;font-size:14px;cursor:pointer;transition:.3s var(--spring);touch-action:manipulation}
+.row button:hover{background:var(--fg);color:var(--bg);transform:scale(1.1)}
+.row button:active{transform:scale(.88)}
+.row .x{margin-left:auto}
+.empty{text-align:center;color:var(--mute);padding:26px 10px;font-size:14px;animation:pop .6s var(--spring)}
+.add{display:flex;margin-top:10px}
+.add input{width:100%;border:1.5px dashed var(--line);background:transparent;color:var(--fg);border-radius:16px;padding:13px 14px;font:inherit;font-size:16px;text-transform:lowercase;outline:none;transition:.4s var(--spring)}
+.add input::placeholder{color:var(--mute)}
+.add input:focus{border-style:solid;border-color:var(--fg);background:var(--card);transform:scale(1.02);box-shadow:var(--shadow)}
+.dot{position:fixed;width:8px;height:8px;border-radius:50%;background:var(--fg);pointer-events:none;z-index:99}
+button:focus-visible,input:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01s!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav><span class="on">kanban</span><span>notes<small>soon</small></span><span>timer<small>soon</small></span><span>habits<small>soon</small></span></nav>
+  <h1>get it done.</h1>
+  <p class="sub" id="sub"></p>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="board" id="board"></div>
+</div>
+<script>
+var COLS=[
+ {k:"todo",n:"to do",g:"○",e:"nothing here. suspiciously calm."},
+ {k:"doing",n:"in progress",g:"◐",e:"drag something in. get moving."},
+ {k:"done",n:"done",g:"●",e:"finished things land here."}];
+var S={todo:[],doing:[],done:[]},KEY="kanban-v1",drag=null,board;
+function uid(){return Math.random().toString(36).slice(2,9)}
+function load(){
+ try{var r=localStorage.getItem(KEY);if(r){var d=JSON.parse(r);if(d&&d.todo&&d.doing&&d.done){S=d;return}}}catch(e){}
+ S={todo:[{id:uid(),t:"plan the week"},{id:uid(),t:"reply to the nice email"}],doing:[{id:uid(),t:"drink more water"}],done:[{id:uid(),t:"open this app"}]};
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function find(id){for(var i=0;i<COLS.length;i++){var k=COLS[i].k,j=S[k].findIndex(function(c){return c.id===id});if(j>-1)return{k:k,j:j}}}
+function move(id,to,idx){
+ var f=find(id);if(!f)return;var c=S[f.k].splice(f.j,1)[0];
+ if(idx==null)idx=S[to].length;
+ S[to].splice(idx,0,c);save();render(id);
+ if(to==="done"&&f.k!=="done")confetti(id);
+}
+function buzz(n){try{navigator.vibrate&&navigator.vibrate(n)}catch(e){}}
+function confetti(id){
+ var el=document.querySelector('[data-id="'+id+'"]');if(!el)return;
+ var r=el.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;buzz([10,40,10]);
+ for(var i=0;i<16;i++){
+  var d=document.createElement("div");d.className="dot";
+  var s=4+Math.random()*6;d.style.width=d.style.height=s+"px";
+  d.style.left=x+"px";d.style.top=y+"px";document.body.appendChild(d);
+  var a=Math.PI*2*i/16+Math.random()*.4,dist=50+Math.random()*80;
+  var an=d.animate([{transform:"translate(0,0) scale(1)",opacity:1},{transform:"translate("+Math.cos(a)*dist+"px,"+(Math.sin(a)*dist-20)+"px) scale(0)",opacity:0}],{duration:700+Math.random()*300,easing:"cubic-bezier(.2,.8,.2,1)"});
+  an.onfinish=(function(n){return function(){n.remove()}})(d);
+ }
+}
+
+/* pointer-based drag: mouse drags instantly, touch needs a short press so scrolling still works */
+function colAt(x){var cols=document.querySelectorAll(".col");for(var i=0;i<cols.length;i++){var r=cols[i].getBoundingClientRect();if(x>=r.left&&x<=r.right)return cols[i]}return null}
+function startDrag(){
+ var d=drag;d.active=true;buzz(12);
+ var r=d.el.getBoundingClientRect();d.ox=d.cx-r.left;d.oy=d.cy-r.top;
+ var g=d.el.cloneNode(true);g.classList.add("ghost");g.classList.remove("dragging","pop");g.style.width=r.width+"px";d.ghost=g;document.body.appendChild(g);
+ d.el.classList.add("dragging");document.body.classList.add("dragging");place();tick();
+}
+function place(){var d=drag;d.ghost.style.transform="translate("+(d.cx-d.ox)+"px,"+(d.cy-d.oy)+"px) rotate(3deg) scale(1.04)";
+ var c=colAt(d.cx);if(c!==d.over){if(d.over)d.over.classList.remove("over");if(c){c.classList.add("over");buzz(6)}d.over=c}}
+function tick(){
+ var d=drag;if(!d||!d.active)return;
+ var r=board.getBoundingClientRect(),z=Math.min(60,r.width/5);
+ if(d.cx<r.left+z)board.scrollLeft-=14;else if(d.cx>r.right-z)board.scrollLeft+=14;
+ place();d.raf=requestAnimationFrame(tick);
+}
+function onMove(e){
+ var d=drag;if(!d||e.pointerId!==d.pid)return;d.cx=e.clientX;d.cy=e.clientY;
+ if(!d.active){
+  if(Math.hypot(d.cx-d.sx,d.cy-d.sy)>8){if(d.type==="mouse")startDrag();else endDrag(false)}
+  return;
+ }
+ place();
+}
+function onUp(e){var d=drag;if(!d||e.pointerId!==d.pid)return;endDrag(e.type==="pointerup")}
+function endDrag(drop){
+ var d=drag;if(!d)return;drag=null;
+ clearTimeout(d.timer);cancelAnimationFrame(d.raf);
+ document.removeEventListener("pointermove",onMove);document.removeEventListener("pointerup",onUp);document.removeEventListener("pointercancel",onUp);
+ if(!d.active)return;
+ if(d.ghost)d.ghost.remove();
+ document.body.classList.remove("dragging");d.el.classList.remove("dragging");
+ document.querySelectorAll(".col").forEach(function(c){c.classList.remove("over")});
+ if(drop&&d.over){
+  var cards=[].slice.call(d.over.querySelectorAll(".card")).filter(function(x){return x.dataset.id!==d.id});
+  var idx=0;cards.forEach(function(x){var r=x.getBoundingClientRect();if(d.cy>r.top+r.height/2)idx++});
+  var k=COLS[[].indexOf.call(document.querySelectorAll(".col"),d.over)].k;
+  move(d.id,k,idx);
+ }
+}
+window.addEventListener("touchmove",function(e){if(drag&&drag.active)e.preventDefault()},{passive:false});
+
+function startEdit(t,el,c){
+ t.contentEditable="true";t.focus();
+ var r=document.createRange();r.selectNodeContents(t);var s=getSelection();s.removeAllRanges();s.addRange(r);
+}
+function mk(c,col,ci){
+ var el=document.createElement("div");el.className="card"+(col.k==="done"?" done":"");el.dataset.id=c.id;
+ var t=document.createElement("div");t.className="t";t.textContent=c.t;
+ t.ondblclick=function(){startEdit(t,el,c)};
+ t.onblur=function(){if(t.contentEditable!=="true")return;t.contentEditable="false";var v=t.textContent.trim().toLowerCase();if(v){c.t=v;save()}t.textContent=c.t};
+ t.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();t.blur()}};
+ var row=document.createElement("div");row.className="row";
+ function b(txt,label,fn,cls){var x=document.createElement("button");x.textContent=txt;x.title=label;x.setAttribute("aria-label",label);if(cls)x.className=cls;x.onclick=fn;row.appendChild(x)}
+ if(ci>0)b("←","move left",function(){move(c.id,COLS[ci-1].k)});
+ if(ci<2)b("→","move right",function(){move(c.id,COLS[ci+1].k)});
+ b("✎","edit",function(){startEdit(t,el,c)});
+ b("×","delete",function(){el.classList.add("out");setTimeout(function(){var f=find(c.id);if(f){S[f.k].splice(f.j,1);save();render()}},280)},"x");
+ el.append(t,row);
+ el.oncontextmenu=function(e){e.preventDefault()};
+ el.onpointerdown=function(e){
+  if(drag||e.button>0||e.target.closest("button")||t.contentEditable==="true")return;
+  drag={id:c.id,el:el,pid:e.pointerId,type:e.pointerType,sx:e.clientX,sy:e.clientY,cx:e.clientX,cy:e.clientY,active:false};
+  if(e.pointerType!=="mouse")drag.timer=setTimeout(function(){if(drag&&!drag.active)startDrag()},240);
+  document.addEventListener("pointermove",onMove);document.addEventListener("pointerup",onUp);document.addEventListener("pointercancel",onUp);
+ };
+ return el;
+}
+function render(popId){
+ COLS.forEach(function(col,ci){
+  var list=document.getElementById("l-"+col.k);list.innerHTML="";
+  S[col.k].forEach(function(c){var el=mk(c,col,ci);if(c.id===popId)el.classList.add("pop");list.appendChild(el)});
+  if(!S[col.k].length){var e=document.createElement("div");e.className="empty";e.textContent=col.e;list.appendChild(e)}
+  document.getElementById("n-"+col.k).textContent=S[col.k].length;
+ });
+ var tot=S.todo.length+S.doing.length+S.done.length;
+ document.getElementById("bar").style.width=(tot?S.done.length/tot*100:0)+"%";
+ document.getElementById("sub").textContent=tot?(S.done.length===tot?"all done. go touch some grass.":S.done.length+" of "+tot+" done. keep going."):"a blank slate. add something below.";
+}
+function init(){
+ load();board=document.getElementById("board");
+ COLS.forEach(function(col){
+  var c=document.createElement("section");c.className="col";
+  c.innerHTML='<div class="head"><span class="glyph">'+col.g+'</span>'+col.n+'<span class="count" id="n-'+col.k+'">0</span></div><div class="list" id="l-'+col.k+'"></div><div class="add"><input placeholder="add a task..." autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-label="add to '+col.n+'"></div>';
+  var inp=c.querySelector("input");
+  inp.onkeydown=function(e){if(e.key==="Enter"){var v=inp.value.trim().toLowerCase();if(!v)return;var n={id:uid(),t:v};S[col.k].push(n);inp.value="";save();render(n.id)}};
+  board.appendChild(c);
+ });
+ render();
+ if("serviceWorker" in navigator&&/^https?:/.test(location.protocol)){navigator.serviceWorker.register("sw.js").catch(function(){})}
+}
+init();
+</script>
+</body>
+</html>
