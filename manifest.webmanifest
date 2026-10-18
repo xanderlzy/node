@@ -1,8 +1,8 @@
 {
   "id": "./",
-  "name": "kanban",
-  "short_name": "kanban",
-  "description": "a minimal kanban board",
+  "name": "node",
+  "short_name": "node",
+  "description": "a minimal toolkit for getting things done",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>kanban</title>
-<meta name="description" content="a minimal kanban board">
+<title>node</title>
+<meta name="description" content="node, a minimal toolkit for getting things done">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -13,7 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="kanban">
+<meta name="apple-mobile-web-app-title" content="node">
 <style>
 :root{--bg:#f5f5f7;--panel:rgba(0,0,0,.04);--card:#fff;--fg:#1d1d1f;--mute:#86868b;--line:rgba(0,0,0,.08);--shadow:0 1px 2px rgba(0,0,0,.06),0 6px 20px rgba(0,0,0,.05);--lift:0 2px 4px rgba(0,0,0,.08),0 18px 40px rgba(0,0,0,.14);color-scheme:light;
 --spring:cubic-bezier(.34,1.56,.64,1);--ease:cubic-bezier(.2,.8,.2,1);
@@ -31,6 +31,8 @@ nav span{padding:8px 16px;border-radius:999px;color:var(--mute);font-size:13px;f
 nav .on{background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
 nav small{opacity:.6;margin-left:4px;font-size:11px}
 h1{font-size:clamp(40px,10vw,72px);line-height:1;letter-spacing:-.045em;font-weight:700;margin:0 0 10px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:18px;font-weight:700;font-size:22px;letter-spacing:-.04em}
+.brand img{width:30px;height:30px;border-radius:9px;display:block}
 .sub{color:var(--mute);margin:0 0 20px;font-size:17px;letter-spacing:-.01em}
 .bar{height:4px;border-radius:4px;background:var(--panel);overflow:hidden;margin-bottom:28px}
 .bar i{display:block;height:100%;width:0;background:var(--fg);border-radius:4px;transition:width .9s var(--spring)}
@@ -76,6 +78,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--fg);outline-off
 </head>
 <body>
 <div class="wrap">
+  <div class="brand"><img src="icons/icon.svg" alt="">node</div>
   <nav><span class="on">kanban</span><span>notes<small>soon</small></span><span>timer<small>soon</small></span><span>habits<small>soon</small></span></nav>
   <h1>get it done.</h1>
   <p class="sub" id="sub"></p>
