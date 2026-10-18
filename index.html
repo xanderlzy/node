@@ -56,7 +56,7 @@ h1{font-size:clamp(40px,10vw,72px);line-height:1;letter-spacing:-.045em;font-wei
 .ghost{position:fixed;left:0;top:0;z-index:100;pointer-events:none;margin:0;box-shadow:var(--lift);transition:none;opacity:1!important}
 .ghost .row{opacity:0!important}
 @keyframes pop{0%{transform:scale(.7) translateY(12px);opacity:0}100%{transform:none;opacity:1}}
-.t{outline:none;word-break:break-word;letter-spacing:-.01em;transition:color .4s;font-size:16px}
+.t{text-transform:none;outline:none;word-break:break-word;letter-spacing:-.01em;transition:color .4s;font-size:16px}
 .t[contenteditable="true"]{user-select:text;-webkit-user-select:text;cursor:text}
 .done .t{color:var(--mute);text-decoration:line-through;text-decoration-thickness:1.5px}
 .row{display:flex;align-items:center;gap:6px;margin-top:8px;min-height:28px;opacity:0;transition:opacity .25s}
@@ -68,7 +68,7 @@ h1{font-size:clamp(40px,10vw,72px);line-height:1;letter-spacing:-.045em;font-wei
 .row .x{margin-left:auto}
 .empty{text-align:center;color:var(--mute);padding:26px 10px;font-size:14px;animation:pop .6s var(--spring)}
 .add{display:flex;margin-top:10px}
-.add input{width:100%;border:1.5px dashed var(--line);background:transparent;color:var(--fg);border-radius:16px;padding:13px 14px;font:inherit;font-size:16px;text-transform:lowercase;outline:none;transition:.4s var(--spring)}
+.add input{width:100%;border:1.5px dashed var(--line);background:transparent;color:var(--fg);border-radius:16px;padding:13px 14px;font:inherit;font-size:16px;text-transform:none;outline:none;transition:.4s var(--spring)}
 .add input::placeholder{color:var(--mute)}
 .add input:focus{border-style:solid;border-color:var(--fg);background:var(--card);transform:scale(1.02);box-shadow:var(--shadow)}
 .dot{position:fixed;width:8px;height:8px;border-radius:50%;background:var(--fg);pointer-events:none;z-index:99}
@@ -94,7 +94,7 @@ var S={todo:[],doing:[],done:[]},KEY="kanban-v1",drag=null,board;
 function uid(){return Math.random().toString(36).slice(2,9)}
 function load(){
  try{var r=localStorage.getItem(KEY);if(r){var d=JSON.parse(r);if(d&&d.todo&&d.doing&&d.done){S=d;return}}}catch(e){}
- S={todo:[{id:uid(),t:"plan the week"},{id:uid(),t:"reply to the nice email"}],doing:[{id:uid(),t:"drink more water"}],done:[{id:uid(),t:"open this app"}]};
+ S={todo:[],doing:[],done:[]};
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 function find(id){for(var i=0;i<COLS.length;i++){var k=COLS[i].k,j=S[k].findIndex(function(c){return c.id===id});if(j>-1)return{k:k,j:j}}}
@@ -168,7 +168,7 @@ function mk(c,col,ci){
  var el=document.createElement("div");el.className="card"+(col.k==="done"?" done":"");el.dataset.id=c.id;
  var t=document.createElement("div");t.className="t";t.textContent=c.t;
  t.ondblclick=function(){startEdit(t,el,c)};
- t.onblur=function(){if(t.contentEditable!=="true")return;t.contentEditable="false";var v=t.textContent.trim().toLowerCase();if(v){c.t=v;save()}t.textContent=c.t};
+ t.onblur=function(){if(t.contentEditable!=="true")return;t.contentEditable="false";var v=t.textContent.trim();if(v){c.t=v;save()}t.textContent=c.t};
  t.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();t.blur()}};
  var row=document.createElement("div");row.className="row";
  function b(txt,label,fn,cls){var x=document.createElement("button");x.textContent=txt;x.title=label;x.setAttribute("aria-label",label);if(cls)x.className=cls;x.onclick=fn;row.appendChild(x)}
@@ -201,9 +201,9 @@ function init(){
  load();board=document.getElementById("board");
  COLS.forEach(function(col){
   var c=document.createElement("section");c.className="col";
-  c.innerHTML='<div class="head"><span class="glyph">'+col.g+'</span>'+col.n+'<span class="count" id="n-'+col.k+'">0</span></div><div class="list" id="l-'+col.k+'"></div><div class="add"><input placeholder="add a task..." autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-label="add to '+col.n+'"></div>';
+  c.innerHTML='<div class="head"><span class="glyph">'+col.g+'</span>'+col.n+'<span class="count" id="n-'+col.k+'">0</span></div><div class="list" id="l-'+col.k+'"></div><div class="add"><input placeholder="add a task..." autocomplete="off" enterkeyhint="done" aria-label="add to '+col.n+'"></div>';
   var inp=c.querySelector("input");
-  inp.onkeydown=function(e){if(e.key==="Enter"){var v=inp.value.trim().toLowerCase();if(!v)return;var n={id:uid(),t:v};S[col.k].push(n);inp.value="";save();render(n.id)}};
+  inp.onkeydown=function(e){if(e.key==="Enter"){var v=inp.value.trim();if(!v)return;var n={id:uid(),t:v};S[col.k].push(n);inp.value="";save();render(n.id)}};
   board.appendChild(c);
  });
  render();
