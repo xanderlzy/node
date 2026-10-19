@@ -16,6 +16,7 @@
 <ul>
 <li><b>account details</b> – your email address (and, if you use google sign-in, the name and profile details google shares with us). your password is handled by google firebase authentication; we never see it in readable form.</li>
 <li><b>your content</b> – the tasks, checklist rows, folders and notes you create.</li>
+<li><b>sharing</b> – if you share a note or folder, we store the email addresses you invite and the access level you give them. people with access can see the owner’s email address and the email addresses of others who have access to that item.</li>
 <li><b>technical data</b> – sign-in times, provider, and ip addresses that firebase records in its normal security logs.</li>
 <li><b>on your device</b> – node stores your board, notes, theme choice and sign-in state in your browser’s local storage and cache so it works offline. this stays on your device unless you sign in to sync.</li>
 </ul>
@@ -26,6 +27,7 @@
 <ul>
 <li>to create and secure your account;</li>
 <li>to store your content and sync it across your devices;</li>
+<li>to let you share notes and folders with people you invite, and to send a verification email when you sign up with an email address;</li>
 <li>to respond to your questions and requests;</li>
 <li>to detect abuse and comply with the law.</li>
 </ul>
@@ -47,7 +49,7 @@
 <ul>
 <li><b>access</b> – settings → <i>export my data</i> downloads everything we hold in your account as a json file.</li>
 <li><b>correction</b> – edit your tasks and notes in the app at any time.</li>
-<li><b>deletion / withdraw consent</b> – settings → <i>delete account</i> permanently deletes your account and content.</li>
+<li><b>deletion / withdraw consent</b> – settings → <i>delete account</i> permanently deletes your account and content. notes and folders you own are deleted for everyone you shared them with, and items others shared with you disappear from your account but stay with their owners.</li>
 <li><b>anything else</b> – email <a data-l="email"></a>. we aim to reply within 30 days.</li>
 </ul>
 

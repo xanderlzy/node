@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // kanban board: private to the signed-in user
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // every note and folder is one document
+    match /items/{id} {
+      allow read: if request.auth != null && (
+        resource.data.owner == request.auth.uid ||
+        (request.auth.token.email_verified == true &&
+         request.auth.token.email in resource.data.memberEmails));
+
+      allow create: if request.auth != null
+        && request.resource.data.owner == request.auth.uid
+        && request.resource.data.memberEmails.size() <= 50;
+
+      allow update: if request.auth != null && (
+        // the owner can change anything except who owns it
+        (resource.data.owner == request.auth.uid
+          && request.resource.data.owner == request.auth.uid
+          && request.resource.data.memberEmails.size() <= 50)
+        ||
+        // editors can only change the text, never the sharing or structure
+        (request.auth.token.email_verified == true
+          && resource.data.acl.get(request.auth.token.email, "none") == "editor"
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["name", "body", "updated"])));
+
+      allow delete: if request.auth != null && resource.data.owner == request.auth.uid;
+    }
+  }
+}
