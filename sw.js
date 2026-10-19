@@ -1,5 +1,5 @@
-const CACHE = "node-v9";
-const ASSETS = ["./", "./index.html", "./auth.js", "./firebase-config.js", "./manifest.webmanifest", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
+const CACHE = "node-v11";
+const ASSETS = ["./", "./index.html", "./auth.js", "./firebase-config.js", "./manifest.webmanifest", "./privacy.html", "./terms.html", "./legal.css", "./legal.js", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
