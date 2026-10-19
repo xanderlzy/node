@@ -14,6 +14,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="node">
+<script>window.setTheme=function(t){var r=document.documentElement;if(t==="light"||t==="dark")r.dataset.theme=t;else delete r.dataset.theme;var m=document.querySelectorAll('meta[name="theme-color"]');if(!window.__tc)window.__tc=[].map.call(m,function(x){return x.content});[].forEach.call(m,function(x,i){x.content=t==="light"?"#f5f5f7":t==="dark"?"#000000":window.__tc[i]});try{localStorage.setItem("node-theme",t)}catch(e){}};try{var th=localStorage.getItem("node-theme");if(th==="light"||th==="dark")window.setTheme(th)}catch(e){}</script>
 <script>try{if(!localStorage.getItem("node-mode")&&!localStorage.getItem("node-uid")){document.documentElement.classList.add("gate");setTimeout(function(){document.documentElement.classList.remove("gate")},5000)}}catch(e){}</script>
 <style>
 :root{--bg:#f5f5f7;--panel:rgba(0,0,0,.04);--card:#fff;--fg:#1d1d1f;--mute:#86868b;--line:rgba(0,0,0,.08);--shadow:0 1px 2px rgba(0,0,0,.06),0 6px 20px rgba(0,0,0,.05);--lift:0 2px 4px rgba(0,0,0,.08),0 18px 40px rgba(0,0,0,.14);color-scheme:light;
@@ -134,6 +135,46 @@ h1{font-size:clamp(40px,10vw,72px);line-height:1;letter-spacing:-.045em;font-wei
 .an{font-weight:600;text-transform:none;word-break:break-all}
 .as{color:var(--mute);font-size:14px}
 .fine{color:var(--mute);font-size:12px;margin:12px 0 0;text-align:center}
+nav span[data-t]{cursor:pointer}
+nav span[data-t]:not(.on):hover{color:var(--fg)}
+#v-kanban[hidden],#v-notes[hidden]{display:none}
+.nbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:14px 0 22px}
+.crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:2px;min-width:0}
+.crumb{border:0;background:none;color:var(--mute);font:inherit;font-size:15px;padding:4px 6px;border-radius:8px;cursor:pointer;text-transform:none}
+.crumb.on{color:var(--fg);font-weight:600}
+.crumb:hover{background:var(--panel)}
+.sep{color:var(--mute);opacity:.6}
+.tbs{display:flex;gap:8px}
+.tb{border:0;background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;text-transform:lowercase;transition:transform .4s var(--spring)}
+.tb.s{background:var(--panel);color:var(--fg);font-weight:500}
+.tb:active{transform:scale(.94)}
+.ngrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.tile{position:relative;background:var(--card);border-radius:22px;padding:16px;min-height:132px;box-shadow:var(--shadow);cursor:pointer;display:flex;flex-direction:column;gap:4px;transition:transform .45s var(--spring),box-shadow .3s,opacity .3s;animation:pop .5s var(--spring)}
+@media(hover:hover){.tile:hover{transform:translateY(-3px);box-shadow:var(--lift)}}
+.tile:active{transform:scale(.97)}
+.tile.out{transform:scale(.8);opacity:0}
+.ti{display:flex;margin-bottom:6px}
+.tn{font-weight:600;letter-spacing:-.01em;text-transform:none;word-break:break-word;outline:none}
+.tile.note .tn{padding-right:62px}
+.tn[contenteditable="true"]{cursor:text;user-select:text;-webkit-user-select:text}
+.tp{color:var(--mute);font-size:13px;text-transform:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.ts{color:var(--mute);font-size:12px;margin-top:auto;padding-top:6px}
+.tb2{position:absolute;top:10px;right:10px;display:flex;gap:4px;opacity:0;transition:opacity .25s}
+.tile:hover .tb2,.tile:focus-within .tb2{opacity:1}
+@media(hover:none){.tb2{opacity:1}}
+.tb2 button{border:0;background:var(--panel);color:var(--mute);width:26px;height:26px;border-radius:13px;font:inherit;font-size:13px;cursor:pointer;transition:.3s var(--spring)}
+.tb2 button:hover{background:var(--fg);color:var(--bg);transform:scale(1.1)}
+.edcard{background:var(--card);border-radius:26px;padding:22px;box-shadow:var(--shadow);animation:pop .6s var(--spring)}
+.ntitle{width:100%;border:0;background:transparent;color:var(--fg);font:inherit;font-size:clamp(26px,6vw,38px);font-weight:700;letter-spacing:-.03em;text-transform:none;outline:none;padding:0 0 10px}
+.nbody{width:100%;border:0;background:transparent;color:var(--fg);font:inherit;font-size:17px;line-height:1.65;text-transform:none;outline:none;resize:none;padding:0;display:block;min-height:260px}
+.ntitle::placeholder,.nbody::placeholder{color:var(--mute);opacity:.7}
+.pl{max-height:50vh;overflow:auto}
+.po{display:block;width:100%;text-align:left;border:0;background:none;color:var(--fg);font:inherit;padding:12px 14px;border-radius:12px;cursor:pointer;text-transform:none}
+.po:hover:not(:disabled){background:var(--panel)}
+.po:disabled{color:var(--mute);cursor:default}
+.seg3 i{width:calc((100% - 8px)/3);transform:translateX(calc(var(--i,0)*100%))}
+.seg3{grid-template-columns:repeat(3,1fr)}
+.appear .as{margin:18px 0 6px;font-weight:600;color:var(--fg)}
 .empty{text-align:center;color:var(--mute);padding:26px 10px;font-size:14px;animation:pop .6s var(--spring)}
 .add{display:flex;margin-top:10px}
 .add input{width:100%;border:1.5px dashed var(--line);background:transparent;color:var(--fg);border-radius:16px;padding:13px 14px;font:inherit;font-size:16px;text-transform:none;outline:none;transition:.4s var(--spring)}
@@ -147,11 +188,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--fg);outline-off
 <body>
 <div class="wrap">
   <div class="top"><img class="logo" src="icon.svg" alt="node">
-  <nav><span class="on">kanban</span><span>notes<small>soon</small></span><span>timer<small>soon</small></span><span>habits<small>soon</small></span></nav><button class="set" title="settings" aria-label="settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h8M16 8h4M4 16h4M12 16h8"/><circle cx="14" cy="8" r="2"/><circle cx="10" cy="16" r="2"/></svg></button></div>
-  <h1>get it done.</h1>
+  <nav><span class="on" data-t="kanban">kanban</span><span data-t="notes">notes</span><span>timer<small>soon</small></span><span>habits<small>soon</small></span></nav><button class="set" title="settings" aria-label="settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8h8M16 8h4M4 16h4M12 16h8"/><circle cx="14" cy="8" r="2"/><circle cx="10" cy="16" r="2"/></svg></button></div>
+  <div id="v-kanban">
+  <h1>kanban.</h1>
   <p class="sub" id="sub"></p>
   <div class="bar"><i id="bar"></i></div>
-  <div class="board" id="board"></div>
+  <div class="board" id="board"></div></div>
+  <div id="v-notes" hidden></div>
 </div>
 <script>
 var COLS=[
@@ -319,10 +362,104 @@ function init(){
  render();
  if("serviceWorker" in navigator&&/^https?:/.test(location.protocol)){navigator.serviceWorker.register("sw.js").catch(function(){})}
 }
-window.nodeGet=function(){return JSON.parse(JSON.stringify(S))};
-window.nodeApply=function(d){S={todo:d.todo||[],doing:d.doing||[],done:d.done||[]};try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}render()};
-window.nodeWipe=function(){S={todo:[],doing:[],done:[]};try{localStorage.removeItem(KEY)}catch(e){}render()};
+/* ---- notes: folders + notes in one flat list (parent = folder id or null) ---- */
+var N=[],NKEY="node-notes-v1",cwd=null,openNote=null,TOOL="kanban";
+try{TOOL=localStorage.getItem("node-tool")||"kanban";N=JSON.parse(localStorage.getItem(NKEY)||"[]")||[]}catch(e){}
+function saveN(){try{localStorage.setItem(NKEY,JSON.stringify(N))}catch(e){}if(window.nodePush)window.nodePush()}
+function E(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+function nf(id){return N.find(function(x){return x.id===id})}
+function kids(p){return N.filter(function(x){return (x.parent||null)===p})}
+function byname(a,b){return a.name.localeCompare(b.name)}
+function trail(id){var a=[];while(id){var f=nf(id);if(!f)break;a.unshift(f);id=f.parent||null}return a}
+function desc(id){var o=[];kids(id).forEach(function(k){o.push(k.id);if(k.type==="folder")o=o.concat(desc(k.id))});return o}
+var FOLD='<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+function tile(it,editId){
+ var t=E("div","tile "+it.type);t.dataset.id=it.id;
+ var isF=it.type==="folder";
+ if(isF){var ic=E("div","ti");ic.innerHTML=FOLD;t.appendChild(ic)}
+ var nm=E("div","tn",isF?it.name:(it.name||"untitled"));t.appendChild(nm);
+ if(isF){var c=kids(it.id).length;t.appendChild(E("div","ts",c+" item"+(c===1?"":"s")))}
+ else{var pv=(it.body||"").trim().slice(0,160);if(pv)t.appendChild(E("div","tp",pv));t.appendChild(E("div","ts",new Date(it.updated||Date.now()).toLocaleDateString(undefined,{month:"short",day:"numeric"}).toLowerCase()))}
+ nm.onblur=function(){if(nm.contentEditable!=="true")return;nm.contentEditable="false";var v=nm.textContent.trim();if(v){it.name=v;it.updated=Date.now();saveN()}nm.textContent=it.name};
+ nm.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();nm.blur()}};
+ var bs=E("div","tb2");
+ function b(txt,label,fn){var x=E("button",null,txt);x.title=label;x.setAttribute("aria-label",label);x.onclick=fn;bs.appendChild(x)}
+ if(isF)b("✎","rename",function(){startEdit(nm)});
+ b("↗","move",function(){openPick(it)});
+ b("×","delete",function(){
+  var ids=[it.id].concat(isF?desc(it.id):[]);
+  if(ids.length>1&&!confirm("delete this folder and everything inside it?"))return;
+  t.classList.add("out");setTimeout(function(){N=N.filter(function(x){return ids.indexOf(x.id)<0});saveN();rn()},260);
+ });
+ t.appendChild(bs);
+ t.onclick=function(e){if(e.target.closest("button")||nm.isContentEditable)return;if(isF)cwd=it.id;else openNote=it.id;rn()};
+ return t;
+}
+function rn(editId){
+ var v=document.getElementById("v-notes");v.innerHTML="";
+ if(openNote&&!nf(openNote))openNote=null;
+ if(cwd&&!nf(cwd))cwd=null;
+ if(openNote)return editor(v);
+ var cur=cwd?nf(cwd):null,tr=trail(cwd);
+ v.appendChild(E("h1",null,cur?cur.name:"notes."));
+ var bar=E("div","nbar"),cr=E("div","crumbs");
+ function crumb(label,id,on){var b=E("button","crumb"+(on?" on":""),label);b.onclick=function(){cwd=id;rn()};cr.appendChild(b)}
+ crumb("notes",null,!cur);
+ tr.forEach(function(f,i){cr.appendChild(E("span","sep","›"));crumb(f.name,f.id,i===tr.length-1)});
+ var tbs=E("div","tbs"),bf=E("button","tb s","+ folder"),bn=E("button","tb","+ note");
+ bf.onclick=function(){var f={id:uid(),type:"folder",name:"untitled folder",parent:cwd,updated:Date.now()};N.push(f);saveN();rn(f.id)};
+ bn.onclick=function(){var n={id:uid(),type:"note",name:"",body:"",parent:cwd,updated:Date.now()};N.push(n);saveN();openNote=n.id;rn()};
+ tbs.append(bf,bn);bar.append(cr,tbs);v.appendChild(bar);
+ var items=kids(cwd).sort(function(a,b){if(a.type!==b.type)return a.type==="folder"?-1:1;return a.type==="folder"?byname(a,b):(b.updated||0)-(a.updated||0)});
+ var g=E("div","ngrid");
+ items.forEach(function(it){g.appendChild(tile(it))});
+ if(!items.length){var em=E("div","empty",cur?"this folder is empty. add a note or a folder.":"nothing here yet. make a folder or a note.");em.style.gridColumn="1/-1";g.appendChild(em)}
+ v.appendChild(g);
+ if(editId){var tn=g.querySelector('[data-id="'+editId+'"] .tn');if(tn)startEdit(tn)}
+}
+function editor(v){
+ var n=nf(openNote),par=n.parent?nf(n.parent):null;
+ var bar=E("div","nbar"),back=E("button","tb s","← "+(par?par.name:"notes")),del=E("button","tb s","delete");
+ back.style.textTransform="none";
+ back.onclick=function(){if(!n.name&&!n.body){N=N.filter(function(x){return x.id!==n.id});saveN()}cwd=n.parent||null;openNote=null;rn()};
+ del.onclick=function(){N=N.filter(function(x){return x.id!==n.id});saveN();cwd=n.parent||null;openNote=null;rn()};
+ bar.append(back,del);
+ var card=E("div","edcard"),ti=E("input","ntitle"),ta=E("textarea","nbody");
+ ti.placeholder="title";ti.value=n.name||"";ta.placeholder="start writing...";ta.value=n.body||"";
+ function grow(){ta.style.height="auto";ta.style.height=Math.max(ta.scrollHeight,260)+"px"}
+ ti.oninput=function(){n.name=ti.value;n.updated=Date.now();saveN()};
+ ta.oninput=function(){n.body=ta.value;n.updated=Date.now();saveN();grow()};
+ ti.onkeydown=function(e){if(e.key==="Enter"){e.preventDefault();ta.focus()}};
+ card.append(ti,ta);v.append(bar,card);grow();
+ if(!n.name&&!n.body)ti.focus();
+}
+/* move picker */
+var pk=E("div","sheet");
+pk.innerHTML='<div class="scrim"></div><div class="panel"><div class="ph">move to<button class="x2" aria-label="close">×</button></div><div class="pl" id="pk-list"></div></div>';
+document.body.appendChild(pk);
+function closePick(){pk.classList.remove("show")}
+pk.querySelector(".scrim").onclick=closePick;pk.querySelector(".x2").onclick=closePick;
+document.addEventListener("keydown",function(e){if(e.key==="Escape")closePick()});
+function openPick(it){
+ var bad=[it.id].concat(it.type==="folder"?desc(it.id):[]),l=document.getElementById("pk-list");l.innerHTML="";
+ function row(label,id,d){var b=E("button","po",label);b.style.paddingLeft=(14+d*18)+"px";if((it.parent||null)===id){b.disabled=true;b.textContent=label+"  (here)"}b.onclick=function(){it.parent=id;it.updated=Date.now();saveN();closePick();rn()};l.appendChild(b)}
+ row("notes",null,0);
+ (function walk(p,d){kids(p).filter(function(x){return x.type==="folder"&&bad.indexOf(x.id)<0}).sort(byname).forEach(function(f){row(f.name,f.id,d);walk(f.id,d+1)})})(null,1);
+ pk.classList.add("show");
+}
+function setTool(t){
+ TOOL=t;try{localStorage.setItem("node-tool",t)}catch(e){}
+ document.getElementById("v-kanban").hidden=t!=="kanban";document.getElementById("v-notes").hidden=t!=="notes";
+ document.querySelectorAll("nav span[data-t]").forEach(function(s){s.classList.toggle("on",s.dataset.t===t)});
+ if(t==="notes")rn();window.scrollTo(0,0);
+}
+document.querySelectorAll("nav span[data-t]").forEach(function(s){s.onclick=function(){setTool(s.dataset.t)}});
+/* sync hooks used by auth.js */
+window.nodeGet=function(){return JSON.parse(JSON.stringify({todo:S.todo,doing:S.doing,done:S.done,notes:N}))};
+window.nodeApply=function(d){S={todo:d.todo||[],doing:d.doing||[],done:d.done||[]};if(d.notes)N=d.notes;try{localStorage.setItem(KEY,JSON.stringify(S));localStorage.setItem(NKEY,JSON.stringify(N))}catch(e){}render();rn()};
+window.nodeWipe=function(){S={todo:[],doing:[],done:[]};N=[];cwd=null;openNote=null;try{localStorage.removeItem(KEY);localStorage.removeItem(NKEY)}catch(e){}render();rn()};
 init();
+setTool(TOOL);
 </script>
 <script type="module" src="auth.js"></script>
 </body>

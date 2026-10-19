@@ -67,6 +67,15 @@ function renderSheet() {
     av.textContent = "g"; an.textContent = "guest"; as.textContent = "your tasks stay on this device only.";
     btn.textContent = "sign in or sign up to sync"; btn.onclick = () => { closeSheet(); showAuth(true) };
   }
+  const T = ["auto", "light", "dark"], cur = ls.get("node-theme") || "auto";
+  const ap = document.createElement("div"); ap.className = "appear";
+  ap.innerHTML = '<div class="as">appearance</div><div class="seg seg3" style="--i:' + T.indexOf(cur) + '"><i></i>' + T.map(t => '<button data-t="' + t + '"' + (t === cur ? ' class="on"' : '') + '>' + t + '</button>').join("") + '</div>';
+  ap.querySelectorAll("button").forEach(x => x.onclick = () => {
+    window.setTheme && window.setTheme(x.dataset.t);
+    ap.querySelector(".seg").style.setProperty("--i", T.indexOf(x.dataset.t));
+    ap.querySelectorAll("button").forEach(y => y.classList.toggle("on", y === x));
+  });
+  b.querySelector(".acct").after(ap);
 }
 
 /* ---------- auth actions ---------- */
@@ -100,10 +109,13 @@ async function signOutNow() {
 
 /* ---------- sync ---------- */
 const clone = o => JSON.parse(JSON.stringify(o));
+const canon = o => JSON.stringify(o, (k, v) => v && typeof v === "object" && !Array.isArray(v) ? Object.keys(v).sort().reduce((r, x) => (r[x] = v[x], r), {}) : v);
 function merge(remote, local) {
   const out = clone(remote), ids = new Set();
   ["todo", "doing", "done"].forEach(k => (out[k] = out[k] || []).forEach(c => ids.add(c.id)));
   ["todo", "doing", "done"].forEach(k => (local[k] || []).forEach(c => { if (!ids.has(c.id)) out[k].push(c) }));
+  out.notes = out.notes || []; const nid = new Set(out.notes.map(c => c.id));
+  (local.notes || []).forEach(c => { if (!nid.has(c.id)) out.notes.push(c) });
   return out;
 }
 function push(now) {
@@ -121,7 +133,7 @@ function applyIdle(d) {
   pend = d; if (pendT) return;
   (function tryit() {
     const a = document.activeElement;
-    const busyNow = (window.drag && window.drag.active) || (a && a.closest && a.closest(".list") && (a.isContentEditable || a.tagName === "INPUT"));
+    const busyNow = (window.drag && window.drag.active) || (a && a.closest && ((a.closest(".list") && (a.isContentEditable || a.tagName === "INPUT")) || (a.closest("#v-notes") && (a.isContentEditable || a.tagName === "INPUT" || a.tagName === "TEXTAREA"))));
     if (busyNow) { pendT = setTimeout(tryit, 900); return }
     pendT = null;
     if (pend && !dirty) window.nodeApply(pend);
@@ -139,7 +151,7 @@ function startSync(u) {
       if (fresh) { ls.set("node-uid", u.uid); window.nodeApply(remote ? merge(remote, window.nodeGet()) : window.nodeGet()); push(true); return }
     }
     if (!remote) { push(true); return }
-    if (dirty || JSON.stringify(remote) === JSON.stringify(window.nodeGet())) return;
+    if (dirty || canon(remote) === canon(window.nodeGet())) return;
     applyIdle(remote);
   }, e => console.warn("sync error", e));
 }
