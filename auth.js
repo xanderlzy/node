@@ -250,7 +250,7 @@ function onUser(u) {
 
 /* ---------- notes sync: every note/folder is its own document in "items" ---------- */
 let srv = {}, base = {}, nready = false, nsubs = [], legacy = null, legacyDone = true, legacyAdded = false, nTimer, pendIds = new Set();
-const pickF = o => ({ type: o.type, name: o.name || "", body: o.body || "", parent: o.parent || null, owner: o.owner || null, ownerEmail: o.ownerEmail || "", direct: o.direct || {}, acl: o.acl || {}, memberEmails: o.memberEmails || [], updated: o.updated || 0, blocks: JSON.parse(JSON.stringify(o.blocks || [])), icon: o.icon || "", trashed: o.trashed || 0 });
+const pickF = o => ({ type: o.type, name: o.name || "", body: o.body || "", parent: o.parent || null, owner: o.owner || null, ownerEmail: o.ownerEmail || "", direct: o.direct || {}, acl: o.acl || {}, memberEmails: o.memberEmails || [], updated: o.updated || 0, blocks: JSON.parse(JSON.stringify(o.blocks || [])), icon: o.icon || "", trashed: o.trashed || 0, order: o.order == null ? null : o.order });
 const sig = o => canon(pickF(o));
 const pushSoon = now => { clearTimeout(nTimer); nTimer = setTimeout(pushNow, now ? 0 : 600) };
 function startNotes(u) {
