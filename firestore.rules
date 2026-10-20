@@ -24,10 +24,10 @@ service cloud.firestore {
           && request.resource.data.owner == request.auth.uid
           && request.resource.data.memberEmails.size() <= 50)
         ||
-        // editors can only change the text, never the sharing or structure
+        // editors can only change the content, never the sharing, location or trash state
         (request.auth.token.email_verified == true
           && resource.data.acl.get(request.auth.token.email, "none") == "editor"
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["name", "body", "updated"])));
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["name", "body", "blocks", "icon", "updated"])));
 
       allow delete: if request.auth != null && resource.data.owner == request.auth.uid;
     }

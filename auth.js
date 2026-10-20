@@ -101,7 +101,7 @@ function renderSheet() {
 }
 function exportData() {
   const d = window.nodeGet ? window.nodeGet() : {};
-  const out = { app: "node", exportedAt: new Date().toISOString(), account: user ? { email: user.email || null, uid: user.uid } : null, kanban: { todo: d.todo || [], doing: d.doing || [], done: d.done || [] }, notes: (window.N || []).filter(x => !x.owner || (user && x.owner === user.uid)).map(x => ({ id: x.id, type: x.type, name: x.name, body: x.body || "", parent: x.parent || null, updated: x.updated || null, sharedWith: x.direct || {} })), sharedWithMe: (window.N || []).filter(x => x.owner && !(user && x.owner === user.uid)).map(x => ({ id: x.id, type: x.type, name: x.name, from: x.ownerEmail || null })) };
+  const out = { app: "node", exportedAt: new Date().toISOString(), account: user ? { email: user.email || null, uid: user.uid } : null, kanban: { todo: d.todo || [], doing: d.doing || [], done: d.done || [] }, notes: (window.N || []).filter(x => !x.owner || (user && x.owner === user.uid)).map(x => ({ id: x.id, type: x.type, name: x.name, body: x.body || "", blocks: x.blocks || [], icon: x.icon || "", trashed: x.trashed || 0, parent: x.parent || null, updated: x.updated || null, sharedWith: x.direct || {} })), sharedWithMe: (window.N || []).filter(x => x.owner && !(user && x.owner === user.uid)).map(x => ({ id: x.id, type: x.type, name: x.name, from: x.ownerEmail || null })) };
   const l = document.createElement("a");
   l.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: "application/json" }));
   l.download = "node-export-" + new Date().toISOString().slice(0, 10) + ".json";
@@ -175,6 +175,7 @@ const clone = o => JSON.parse(JSON.stringify(o));
 const canon = o => JSON.stringify(o, (k, v) => v && typeof v === "object" && !Array.isArray(v) ? Object.keys(v).sort().reduce((r, x) => (r[x] = v[x], r), {}) : v);
 function merge(remote, local) {
   const out = clone(remote), ids = new Set();
+  out.favs = Array.from(new Set([...(out.favs || []), ...(local.favs || [])]));
   ["todo", "doing", "done"].forEach(k => (out[k] = out[k] || []).forEach(c => ids.add(c.id)));
   ["todo", "doing", "done"].forEach(k => (local[k] || []).forEach(c => { if (!ids.has(c.id)) out[k].push(c) }));
   return out;
@@ -214,7 +215,7 @@ function startSync(u) {
       if (fresh) { ls.set("node-uid", u.uid); window.nodeApply(remote ? merge(remote, window.nodeGet()) : window.nodeGet()); push(true); return }
     }
     if (!remote) { push(true); return }
-    if (dirty || canon({ todo: remote.todo, doing: remote.doing, done: remote.done }) === canon(window.nodeGet())) return;
+    if (dirty || canon({ todo: remote.todo, doing: remote.doing, done: remote.done, favs: remote.favs || [] }) === canon(window.nodeGet())) return;
     applyIdle(remote);
   }, e => console.warn("sync error", e));
   startNotes(u);
@@ -249,7 +250,7 @@ function onUser(u) {
 
 /* ---------- notes sync: every note/folder is its own document in "items" ---------- */
 let srv = {}, base = {}, nready = false, nsubs = [], legacy = null, legacyDone = true, legacyAdded = false, nTimer, pendIds = new Set();
-const pickF = o => ({ type: o.type, name: o.name || "", body: o.body || "", parent: o.parent || null, owner: o.owner || null, ownerEmail: o.ownerEmail || "", direct: o.direct || {}, acl: o.acl || {}, memberEmails: o.memberEmails || [], updated: o.updated || 0 });
+const pickF = o => ({ type: o.type, name: o.name || "", body: o.body || "", parent: o.parent || null, owner: o.owner || null, ownerEmail: o.ownerEmail || "", direct: o.direct || {}, acl: o.acl || {}, memberEmails: o.memberEmails || [], updated: o.updated || 0, blocks: JSON.parse(JSON.stringify(o.blocks || [])), icon: o.icon || "", trashed: o.trashed || 0 });
 const sig = o => canon(pickF(o));
 const pushSoon = now => { clearTimeout(nTimer); nTimer = setTimeout(pushNow, now ? 0 : 600) };
 function startNotes(u) {
@@ -257,7 +258,7 @@ function startNotes(u) {
   const em = (u.email || "").toLowerCase(), need = em ? 2 : 1, seen = [false, false]; let ready = 0;
   const done = () => { if (ready >= need) { nready = true; reconcile() } };
   const mkH = i => snap => {
-    snap.docChanges().forEach(ch => { const id = ch.doc.id; if (ch.type === "removed") delete srv[id]; else srv[id] = { ...ch.doc.data(), id } });
+    snap.docChanges().forEach(ch => { const id = ch.doc.id; if (ch.type === "removed") delete srv[id]; else srv[id] = window.normItem({ ...ch.doc.data(), id }) });
     if (!seen[i]) { if (snap.metadata.fromCache && snap.empty && navigator.onLine) return; seen[i] = true; ready++ }
     done();
   };
@@ -270,7 +271,7 @@ function addLegacy() {
   if (!legacy || legacyAdded || !nready) return;
   legacyAdded = true;
   const ids = new Set(window.N.map(x => x.id));
-  legacy.forEach(x => { if (!ids.has(x.id) && !srv[x.id] && !(x.id in base)) window.N.push({ ...x, owner: null }) });
+  legacy.forEach(x => { if (!ids.has(x.id) && !srv[x.id] && !(x.id in base)) window.N.push(window.normItem({ ...x, owner: null })) });
   pushSoon(true);
 }
 function reconcile() {
@@ -301,8 +302,8 @@ async function pushNow() {
     const b = srv[x.id], ref = fb.doc(db, "items", x.id);
     if (x.owner === me) {
       if (!b || sig(x) !== sig(b)) { pendIds.add(x.id); jobs.push(fb.setDoc(ref, pickF(x)).catch(fail(x)).finally(() => pendIds.delete(x.id))) }
-    } else if (b && window.role(x) === "editor" && (x.name !== b.name || (x.body || "") !== (b.body || ""))) {
-      jobs.push(fb.updateDoc(ref, { name: x.name || "", body: x.body || "", updated: x.updated || Date.now() }).catch(fail(x)));
+    } else if (b && window.role(x) === "editor" && canon({ n: x.name, b: x.blocks, i: x.icon }) !== canon({ n: b.name, b: b.blocks, i: b.icon })) {
+      jobs.push(fb.updateDoc(ref, { name: x.name || "", body: x.body || "", blocks: JSON.parse(JSON.stringify(x.blocks || [])), icon: x.icon || "", updated: x.updated || Date.now() }).catch(fail(x)));
     }
   });
   Object.keys(srv).forEach(id => { if (srv[id].owner === me && !byId.has(id)) jobs.push(fb.deleteDoc(fb.doc(db, "items", id)).catch(fail({ id }))) });
@@ -322,9 +323,9 @@ window.nodeShare = it => { if (!user) { showAuth(true); return } ssItem = it; ss
 function touchItem() { ssItem.updated = Date.now(); window.saveN && window.saveN() }
 function renderShare(invited) {
   const it = ssItem, b = $("#ss-body"), d = it.direct || {};
-  $("#ss-t").textContent = it.type === "folder" ? "share folder" : "share note";
+  $("#ss-t").textContent = "share page";
   b.innerHTML = "";
-  b.appendChild(hx("p", "as", it.type === "folder" ? "people you invite can open this folder and every note inside it, including notes you add later. they need to sign in to node with the invited email address." : "people you invite can open this note. they need to sign in to node with the invited email address."));
+  b.appendChild(hx("p", "as", "people you invite can open this page and every sub-page inside it, including ones you add later. they need to sign in to node with the invited email address."));
   const list = hx("div"); b.appendChild(list);
   Object.keys(d).sort().forEach(e => {
     const row = hx("div", "who"), sel = hx("select", "rsel"), x = hx("button", "x2", "×");
