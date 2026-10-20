@@ -69,7 +69,7 @@ function toast(msg, act, fn) {
 function closePop() { if (POP) { POP.remove(); POP = null } document.removeEventListener("click", outside, true) }
 function outside(e) { if (POP && !POP.contains(e.target)) closePop() }
 function pop(anchor, fill, cls) {
-  closePop(); var d = E("div", "pop " + (cls || "")); fill(d); document.body.appendChild(d);
+  closePop(); var d = E("div", "popm " + (cls || "")); fill(d); document.body.appendChild(d);
   var r = anchor.getBoundingClientRect();
   d.style.top = Math.max(8, Math.min(r.bottom + 6, innerHeight - d.offsetHeight - 8)) + "px";
   d.style.left = Math.max(8, Math.min(r.left, innerWidth - d.offsetWidth - 8)) + "px";
