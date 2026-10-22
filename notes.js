@@ -25,7 +25,8 @@ function walkH(n) {
 function clean(h) { var t = document.createElement("template"); t.innerHTML = h || ""; return walkH(t.content) }
 function plain(h) { var t = document.createElement("template"); t.innerHTML = h || ""; return t.content.textContent }
 function ctext(t) { return t.innerText !== undefined ? t.innerText : t.textContent }
-function blocksText(bs) { return (bs || []).map(function (b) { return b.t === "div" ? "" : b.t === "code" ? (b.x || "") : plain(b.x) }).join("\n") }
+function tableText(b) { return (b.rows || []).map(function (rw) { return (rw.c || []).map(plain).join(" | ") }).join("\n") }
+function blocksText(bs) { return (bs || []).map(function (b) { return b.t === "div" ? "" : b.t === "table" ? tableText(b) : b.t === "code" ? (b.x || "") : plain(b.x) }).join("\n") }
 
 /* ---- model ---- */
 function fromBody(it) { return (it.body || "").split("\n").map(function (l, i) { return { id: it.id + "-" + i, t: "p", x: esc(l), n: 0 } }) }
@@ -422,7 +423,7 @@ function dropPage(id, tid, pos) {
 }
 window.addEventListener("touchmove", function (e) { if (SDG && SDG.on) e.preventDefault() }, { passive: false });
 
-var TYPES = [["p", "text"], ["h1", "heading 1"], ["h2", "heading 2"], ["h3", "heading 3"], ["ul", "bulleted list"], ["ol", "numbered list"], ["todo", "to-do"], ["toggle", "toggle"], ["quote", "quote"], ["callout", "callout"], ["code", "code"], ["div", "divider"]];
+var TYPES = [["p", "text"], ["h1", "heading 1"], ["h2", "heading 2"], ["h3", "heading 3"], ["ul", "bulleted list"], ["ol", "numbered list"], ["todo", "to-do"], ["toggle", "toggle"], ["quote", "quote"], ["callout", "callout"], ["code", "code"], ["table", "table"], ["div", "divider"]];
 var PH = { p: "type / for blocks", h1: "heading 1", h2: "heading 2", h3: "heading 3", ul: "list", ol: "list", todo: "to-do", toggle: "toggle", quote: "quote", callout: "callout", code: "code" };
 function clearDT() { document.querySelectorAll(".blk.dt,.blk.db").forEach(function (x) { x.classList.remove("dt", "db") }) }
 function renderEditor() { var h = document.getElementById("blocks"), p = nf(curPage); if (h && p) { renderBlocks(h, p, h.dataset.ro === "1"); applyPF() } }
@@ -448,6 +449,7 @@ function blockRow(b, p, ro, num) {
   }
   var body = E("div", "bb");
   if (b.t === "div") body.appendChild(E("hr"));
+  else if (b.t === "table") body.appendChild(tableEl(b, ro));
   else {
     if (b.t === "ul") body.appendChild(E("span", "mk", ["•", "◦", "▪", "•"][b.n]));
     if (b.t === "ol") body.appendChild(E("span", "mk", num + "."));
@@ -473,7 +475,8 @@ function caretOffset(el) { var s = getSelection(); if (!s.rangeCount) return 0; 
 function atStart(el) { var s = getSelection(); if (!s.rangeCount || !s.isCollapsed) return false; var r = document.createRange(); r.selectNodeContents(el); r.setEnd(s.anchorNode, s.anchorOffset); return r.toString().length === 0 }
 function applyPF() {
   if (!PF) return; var f = PF; PF = null;
-  var el = document.querySelector('.blk[data-id="' + f.id + '"] .bt'); if (!el) return;
+  if (f.cell) { var ce = document.querySelector('.blk[data-id="' + f.id + '"] .tc[data-r="' + f.cell[0] + '"][data-c="' + f.cell[1] + '"]'); if (ce) { ce.focus(); caretEnd(ce) } return }
+  var el = document.querySelector('.blk[data-id="' + f.id + '"] .bt, .blk[data-id="' + f.id + '"] .tc'); if (!el) return;
   el.focus(); if (f.pos === "start") caretStart(el); else if (f.pos === "end") caretEnd(el); else caretAt(el, f.pos);
 }
 function lineEdge(t, up) {
@@ -484,7 +487,7 @@ function lineEdge(t, up) {
   } catch (e) { return false }
 }
 function adj(t, dir) {
-  var all = [].slice.call(document.querySelectorAll('#blocks .bt[contenteditable="true"]')), i = all.indexOf(t) + dir;
+  var all = [].slice.call(document.querySelectorAll('#blocks .bt[contenteditable="true"],#blocks .tc[contenteditable="true"]')), i = all.indexOf(t) + dir;
   if (i < 0 || i >= all.length) return false; all[i].focus(); if (dir < 0) caretEnd(all[i]); else caretStart(all[i]); return true;
 }
 var SHORT = [[/^#\s/, "h1"], [/^##\s/, "h2"], [/^###\s/, "h3"], [/^[-*]\s/, "ul"], [/^1\.\s/, "ol"], [/^\[\s?\]\s/, "todo"], [/^>\s/, "quote"], [/^```/, "code"]];
@@ -511,7 +514,7 @@ function showSlash(id, t, q) {
 function pickSlash(type) {
   var B = gb(SM.id), p = nf(curPage); if (!B) return; hideSlash();
   B.t = type; B.x = ""; if (type === "todo") B.c = false; if (type === "toggle") B.o = true;
-  if (type === "div") { var nb = newB(B.n); p.blocks.splice(bi(B.id) + 1, 0, nb); PF = { id: nb.id, pos: "start" } } else PF = { id: B.id, pos: "start" };
+  if (type === "table") { makeTable(B, p, ""); PF = { id: B.id, cell: [0, 0] } } else if (type === "div") { var nb = newB(B.n); p.blocks.splice(bi(B.id) + 1, 0, nb); PF = { id: nb.id, pos: "start" } } else PF = { id: B.id, pos: "start" };
   commit();
 }
 function splitBlock(B, t, p, i) {
@@ -531,6 +534,7 @@ function backspace(B, t, p, i) {
   if (i === 0) return;
   var prev = p.blocks[i - 1];
   if (prev.t === "div") { p.blocks.splice(i - 1, 1); PF = { id: B.id, pos: "start" }; commit(); return }
+  if (prev.t === "table") { PF = { id: prev.id, cell: [prev.rows.length - 1, prev.rows[0].c.length - 1] }; commit(); return }
   var cx = clean(t.innerHTML), plen = prev.t === "code" ? (prev.x || "").length : plain(prev.x).length;
   prev.x = prev.t === "code" ? (prev.x || "") + plain(cx) : (prev.x || "") + cx;
   p.blocks.splice(i, 1); PF = { id: prev.id, pos: plen }; commit();
@@ -596,8 +600,107 @@ function blockMenu(anchor, id) {
     popBtn(d, "move down", function () { var i = bi(id); if (i < p.blocks.length - 1) { var b = p.blocks.splice(i, 1)[0]; p.blocks.splice(i + 1, 0, b); PF = { id: id, pos: "end" }; commit() } });
     popBtn(d, "delete", function () { var i = bi(id); p.blocks.splice(i, 1); if (!p.blocks.length) p.blocks.push(newB(0)); commit() });
     d.appendChild(E("div", "nsec", "turn into"));
-    TYPES.forEach(function (x) { popBtn(d, x[1], function () { var B = gb(id); if (!B) return; B.t = x[0]; if (x[0] === "div") B.x = ""; if (x[0] === "code") B.x = plain(B.x); if (x[0] === "todo") B.c = false; if (x[0] === "toggle") B.o = true; PF = { id: id, pos: "end" }; commit() }) });
+    TYPES.forEach(function (x) { popBtn(d, x[1], function () {
+      var B = gb(id); if (!B) return;
+      if (B.t === "table") { B.x = esc(tableText(B).replace(/\n/g, " ")); delete B.rows; delete B.h }
+      if (x[0] === "table") { makeTable(B, p, B.x); PF = { id: id, cell: [0, 0] }; commit(); return }
+      B.t = x[0]; if (x[0] === "div") B.x = ""; if (x[0] === "code") B.x = plain(B.x); if (x[0] === "todo") B.c = false; if (x[0] === "toggle") B.o = true; PF = { id: id, pos: "end" }; commit();
+    }) });
   });
+}
+
+/* ---- tables ---- */
+var TC = null;
+function newRows(R, C) { var o = []; for (var i = 0; i < R; i++) { var c = []; for (var j = 0; j < C; j++) c.push(""); o.push({ c: c }) } return o }
+function makeTable(B, p, txt) {
+  B.t = "table"; B.h = true; B.rows = newRows(3, 3); B.rows[0].c[0] = txt || ""; B.x = "";
+  if (p.blocks[p.blocks.length - 1] === B) p.blocks.push(newB(B.n));
+}
+function tableNorm(b) {
+  if (!Array.isArray(b.rows) || !b.rows.length) b.rows = newRows(3, 3);
+  b.rows = b.rows.slice(0, 100); var C = 1;
+  b.rows.forEach(function (rw, i) { if (!rw || !Array.isArray(rw.c)) b.rows[i] = rw = { c: [] }; rw.c = rw.c.slice(0, 12).map(function (x) { return typeof x === "string" ? x : "" }); C = Math.max(C, rw.c.length) });
+  b.rows.forEach(function (rw) { while (rw.c.length < C) rw.c.push("") });
+}
+function focusCell(bid, r, c) { var el = document.querySelector('.blk[data-id="' + bid + '"] .tc[data-r="' + r + '"][data-c="' + c + '"]'); if (el) { el.focus(); caretEnd(el); return true } return false }
+function tableOp(bid, op) {
+  var B = gb(bid); if (!B) return; tableNorm(B);
+  var C = B.rows[0].c.length, r = TC && TC.id === bid ? Math.min(TC.r, B.rows.length - 1) : B.rows.length - 1, c = TC && TC.id === bid ? Math.min(TC.c, C - 1) : C - 1;
+  if (op === "addrow") { if (B.rows.length >= 100) return; B.rows.splice(r + 1, 0, { c: newRows(1, C)[0].c }); PF = { id: bid, cell: [r + 1, c] } }
+  else if (op === "addcol") { if (C >= 12) return; B.rows.forEach(function (rw) { rw.c.splice(c + 1, 0, "") }); PF = { id: bid, cell: [r, c + 1] } }
+  else if (op === "delrow") { if (B.rows.length <= 1) return; B.rows.splice(r, 1); PF = { id: bid, cell: [Math.min(r, B.rows.length - 1), c] } }
+  else if (op === "delcol") { if (C <= 1) return; B.rows.forEach(function (rw) { rw.c.splice(c, 1) }); PF = { id: bid, cell: [r, Math.min(c, C - 2)] } }
+  else if (op === "head") { B.h = !B.h; PF = { id: bid, cell: [r, c] } }
+  commit();
+}
+function leaveTable(bid, dir) {
+  var rows = [].slice.call(document.querySelectorAll("#blocks .blk")), me = document.querySelector('.blk[data-id="' + bid + '"]'), i = rows.indexOf(me) + dir;
+  for (; i >= 0 && i < rows.length; i += dir) {
+    var t = rows[i].querySelector('.bt[contenteditable="true"]'); if (t) { t.focus(); if (dir < 0) caretEnd(t); else caretStart(t); return }
+    var cs = rows[i].querySelectorAll('.tc[contenteditable="true"]'); if (cs.length) { var c = dir < 0 ? cs[cs.length - 1] : cs[0]; c.focus(); caretEnd(c); return }
+  }
+}
+function wireCell(td, bid, r, c) {
+  td.onfocus = function () { TC = { id: bid, r: r, c: c } };
+  td.onblur = function () { flushSave() };
+  td.oninput = function () {
+    var B = gb(bid); if (!B || !B.rows[r]) return;
+    if (td.innerHTML === "<br>") td.innerHTML = "";
+    B.rows[r].c[c] = clean(td.innerHTML); saveSoon();
+  };
+  td.onpaste = function (e) {
+    e.preventDefault(); var B = gb(bid); if (!B) return;
+    var tx = ((e.clipboardData || window.clipboardData).getData("text/plain") || "").replace(/\r/g, ""); if (!tx) return;
+    if (tx.indexOf("\t") < 0 && tx.indexOf("\n") < 0) { document.execCommand("insertText", false, tx); return }
+    var ls = tx.replace(/\n$/, "").split("\n").map(function (l) { return l.split("\t") });
+    var C = Math.min(12, Math.max(B.rows[0].c.length, c + Math.max.apply(null, ls.map(function (l) { return l.length }))));
+    ls.forEach(function (cells, i) {
+      if (r + i >= 100) return; while (B.rows.length <= r + i) B.rows.push({ c: [] });
+      cells.forEach(function (v, j) { if (c + j < C) { var rw = B.rows[r + i]; while (rw.c.length <= c + j) rw.c.push(""); rw.c[c + j] = esc(v) } });
+    });
+    B.rows.forEach(function (rw) { while (rw.c.length < C) rw.c.push("") });
+    PF = { id: bid, cell: [r, c] }; commit();
+  };
+  td.onkeydown = function (e) {
+    var B = gb(bid); if (!B) return; var k = e.key, R = B.rows.length, C = B.rows[0].c.length;
+    if (k === "Tab") {
+      e.preventDefault(); var nr = r, nc = c + (e.shiftKey ? -1 : 1);
+      if (nc >= C) { nc = 0; nr++ } if (nc < 0) { nc = C - 1; nr-- }
+      if (nr < 0) return;
+      if (nr >= R) { if (R >= 100) return; B.rows.push({ c: newRows(1, C)[0].c }); PF = { id: bid, cell: [nr, nc] }; commit(); return }
+      focusCell(bid, nr, nc); return;
+    }
+    if (k === "Enter" && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      if (r + 1 < R) focusCell(bid, r + 1, c); else if (R < 100) { B.rows.push({ c: newRows(1, C)[0].c }); PF = { id: bid, cell: [r + 1, c] }; commit() }
+      return;
+    }
+    if (k === "ArrowUp" && lineEdge(td, true)) { e.preventDefault(); if (r > 0) focusCell(bid, r - 1, c); else leaveTable(bid, -1); return }
+    if (k === "ArrowDown" && lineEdge(td, false)) { e.preventDefault(); if (r < R - 1) focusCell(bid, r + 1, c); else leaveTable(bid, 1); return }
+  };
+}
+function tableEl(b, ro) {
+  tableNorm(b);
+  var wrap = E("div", "tw"), sc = E("div", "tscroll"), tb = E("table", "ntbl"), tbody = E("tbody");
+  b.rows.forEach(function (row, ri) {
+    var tr = E("tr");
+    row.c.forEach(function (cell, ci) {
+      var td = E(b.h && ri === 0 ? "th" : "td", "tc"); td.dataset.r = ri; td.dataset.c = ci;
+      td.setAttribute("contenteditable", ro ? "false" : "true"); td.innerHTML = clean(cell); decorate(td);
+      if (!ro) wireCell(td, b.id, ri, ci);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  tb.appendChild(tbody); sc.appendChild(tb); wrap.appendChild(sc);
+  if (!ro) {
+    var bar = E("div", "tbar");
+    [["addrow", "+ row"], ["addcol", "+ column"], ["delrow", "– row"], ["delcol", "– column"], ["head", b.h ? "header: on" : "header: off"]].forEach(function (a) {
+      var x = E("button", null, a[1]); x.onmousedown = function (e) { e.preventDefault() }; x.onclick = function () { tableOp(b.id, a[0]) }; bar.appendChild(x);
+    });
+    wrap.appendChild(bar);
+  }
+  return wrap;
 }
 
 /* ---- floating format bar ---- */
@@ -615,7 +718,7 @@ ITB.onclick = function (e) {
 };
 document.addEventListener("selectionchange", function () {
   var s = getSelection(); if (!s.rangeCount || s.isCollapsed) { ITB.hidden = true; return }
-  var n = s.anchorNode, el = n && (n.nodeType === 3 ? n.parentElement : n), bt = el && el.closest && el.closest('.bt[contenteditable="true"]');
+  var n = s.anchorNode, el = n && (n.nodeType === 3 ? n.parentElement : n), bt = el && el.closest && el.closest('.bt[contenteditable="true"],.tc[contenteditable="true"]');
   if (!bt || bt.closest(".t-code")) { ITB.hidden = true; return }
   var r = s.getRangeAt(0).getBoundingClientRect(); ITB.hidden = false;
   ITB.style.left = Math.max(8, Math.min(innerWidth - 250, r.left + r.width / 2 - 110)) + "px"; ITB.style.top = Math.max(8, r.top - 46) + "px";

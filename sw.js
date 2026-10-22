@@ -1,4 +1,4 @@
-const CACHE = "node-v15";
+const CACHE = "node-v16";
 const ASSETS = ["./", "./index.html", "./auth.js", "./notes.js", "./firebase-config.js", "./manifest.webmanifest", "./privacy.html", "./terms.html", "./legal.css", "./legal.js", "./icon.svg", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
